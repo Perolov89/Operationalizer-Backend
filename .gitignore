@@ -164,3 +164,7 @@ cython_debug/
 
 # test and train data sets
 .final_symbols_split_ttv
+
+
+# workflow notes
+notes.txt
