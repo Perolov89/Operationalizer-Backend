@@ -1,12 +1,15 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import tensorflow as tf
 import numpy as np
 from PIL import Image, UnidentifiedImageError
 import io
+import base64
 
 model = tf.keras.models.load_model('number_and_symbol_recognizer.keras')
 
 app = Flask(__name__)
+CORS(app)
 
 def preprocess_image(image_bytes):
     try:
@@ -30,26 +33,33 @@ def preprocess_image(image_bytes):
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    # Check if the request contains an image file
-    if 'file' not in request.files:
-        return jsonify({"error": "No file provided"}), 400
+    # Ensure JSON payload and "image" key are present
+    data = request.get_json()
+    if not data or 'image' not in data:
+        return jsonify({"error": "No image data provided"}), 400
     
-    # Get the image file from the request
-    file = request.files['file']
+    # Extract base64-encoded string from JSON and remove "data:image/png;base64,"
+    base64_data = data['image'].split(',')[1] if ',' in data['image'] else data['image']
     
-    # Read the file and preprocess it
-    img_array = preprocess_image(file.read())
+    try:
+        # Decode base64 data
+        image_bytes = base64.b64decode(base64_data)
+        
+        # Preprocess the image
+        img_array = preprocess_image(image_bytes)
+        
+        if img_array is None:
+            return jsonify({"error": "Invalid image format"}), 400
+        
+        # Run model prediction
+        predictions = model.predict(img_array)
+        predicted_label = int(np.argmax(predictions, axis=1)[0])  # Get the label as an integer
+        
+        # Return prediction
+        return jsonify({"predicted_label": predicted_label})
     
-    # Handle the case where the image is invalid
-    if img_array is None:
-        return jsonify({"error": "Invalid image format"}), 400
-    
-    # Run the model prediction
-    predictions = model.predict(img_array)
-    predicted_label = int(np.argmax(predictions, axis=1)[0])  # Get the label as an integer
-
-    # Return the prediction result
-    return jsonify({"predicted_label": predicted_label})
+    except (ValueError, base64.binascii.Error):
+        return jsonify({"error": "Invalid base64 data"}), 400
 
 if __name__ == '__main__':
     app.run(debug=True)
