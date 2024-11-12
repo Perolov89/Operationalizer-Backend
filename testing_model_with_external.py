@@ -1,3 +1,5 @@
+# Testing the model wiht external images that are not from the dataset
+
 import tensorflow as tf
 import numpy as np
 from PIL import Image, UnidentifiedImageError

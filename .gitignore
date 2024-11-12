@@ -164,7 +164,7 @@ cython_debug/
 
 # Test and train data sets
 .final_symbols_split_ttv
-/testing_main
+/external_testing
 
 # Workflow notes
 notes.txt
