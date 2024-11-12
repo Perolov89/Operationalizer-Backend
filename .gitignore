@@ -162,9 +162,11 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-# test and train data sets
+# Test and train data sets
 .final_symbols_split_ttv
+/testing_main
 
-
-# workflow notes
+# Workflow notes
 notes.txt
+# the model
+number_and_symbol_recognizer.keras
