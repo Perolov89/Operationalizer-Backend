@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import tensorflow as tf
 import numpy as np
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, UnidentifiedImageError, ImageOps
 import io
 import base64
 
@@ -13,31 +13,24 @@ CORS(app)
 
 def preprocess_image(image_bytes):
     try:
-        # Step 1: Open the image
         img = Image.open(io.BytesIO(image_bytes))
-        img.save("original_image.png")  # Save the raw input image to inspect
-
-        # Step 2: Convert to grayscale
+        
         if img.mode != 'L':
             img = img.convert('L')
-        img.save("grayscale_image.png")  # Save after grayscale conversion
-
-        # Step 3: Resize to 28x28 px
+        
         img = img.resize((28, 28))
-        img.save("resized_image.png")  # Save after resizing
-
-        # Step 4: Normalize and reshape the image
-        img_array = np.array(img) / 255.0  # Normalizing the image
+        
+        img_array = np.array(img) / 255.0
         img_array = img_array.reshape(1, 28, 28, 1)
 
-        # Save the final processed image for debugging
-        processed_image = (img_array[0, :, :, 0] * 255).astype(np.uint8)  # Convert back to 8-bit to save as an image
-        Image.fromarray(processed_image).save("processed_image.png")
+        # Check result
+        Image.fromarray((img_array[0, :, :, 0] * 255).astype(np.uint8)).save("processed_image.png")
         
         return img_array
-    except UnidentifiedImageError:
-        print("Error: Image format not recognized.")
+    except UnidentifiedImageError as e:
+        print(f"Error processing image: {e}")
         return None
+
 
 @app.route('/predict', methods=['POST'])
 def predict():
