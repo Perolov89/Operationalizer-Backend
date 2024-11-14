@@ -13,22 +13,30 @@ CORS(app)
 
 def preprocess_image(image_bytes):
     try:
-        # Open the image
+        # Step 1: Open the image
         img = Image.open(io.BytesIO(image_bytes))
-        
-        # Convert to grayscale
+        img.save("original_image.png")  # Save the raw input image to inspect
+
+        # Step 2: Convert to grayscale
         if img.mode != 'L':
             img = img.convert('L')
-        
-        # Resize to 28x28 px
+        img.save("grayscale_image.png")  # Save after grayscale conversion
+
+        # Step 3: Resize to 28x28 px
         img = img.resize((28, 28))
-        
-        # Normalize and reshape the image
-        img_array = np.array(img) / 255.0
+        img.save("resized_image.png")  # Save after resizing
+
+        # Step 4: Normalize and reshape the image
+        img_array = np.array(img) / 255.0  # Normalizing the image
         img_array = img_array.reshape(1, 28, 28, 1)
+
+        # Save the final processed image for debugging
+        processed_image = (img_array[0, :, :, 0] * 255).astype(np.uint8)  # Convert back to 8-bit to save as an image
+        Image.fromarray(processed_image).save("processed_image.png")
         
         return img_array
     except UnidentifiedImageError:
+        print("Error: Image format not recognized.")
         return None
 
 @app.route('/predict', methods=['POST'])
@@ -60,6 +68,8 @@ def predict():
     
     except (ValueError, base64.binascii.Error):
         return jsonify({"error": "Invalid base64 data"}), 400
+    
+    
 
 if __name__ == '__main__':
     app.run(debug=True)
