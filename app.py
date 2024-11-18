@@ -29,7 +29,7 @@ def preprocess_image(image_bytes):
 
         # Check result
         Image.fromarray(
-            (img_array[0, :, :, 0] * 255).astype(np.uint8)).save("processed_image.png")
+            (img_array[0, :, :, 0] * 255).astype(np.uint8)).save('processed_image.png')
 
         return img_array
     except UnidentifiedImageError as e:
@@ -54,40 +54,51 @@ def convert_to_symbol(predicted_label):
 
 @app.route('/predict', methods=['POST'])
 def predict():
+    # print("Received request")  # debug print
 
     data = request.get_json()
-    if not data or 'image' not in data:
-        return jsonify({"error": "No image data provided"}), 400
 
-    # Extract base64-encoded string from JSON and remove "data:image/png;base64,"
-    base64_data = data['image'].split(
-        ',')[1] if ',' in data['image'] else data['image']
+    # print("Received data:", data) # debug print
+    if not data or 'images' not in data:
+        return jsonify({'error': 'No image data provided'}), 400
+
+    required_keys = ['firstNumber', 'operator', 'secondNumber']
+    if not all(key in data['images'] for key in required_keys):
+        return jsonify({'error': 'Missing required keys in images'}), 400
 
     try:
-        image_bytes = base64.b64decode(base64_data)
+        predictions = {}
+        # print("Images field content:", data['images']) # debug print
+        for id, image_data in data['images'].items():
+            # Extract base64-encoded string from JSON and remove "data:image/png;base64,"
+            base64_data = image_data.split(
+                ',')[1] if ',' in image_data else image_data
 
-        # Preprocess the image
-        img_array = preprocess_image(image_bytes)
+            image_bytes = base64.b64decode(base64_data)
 
-        if img_array is None:
-            return jsonify({"error": "Invalid image format"}), 400
+            # Preprocess the image
+            img_array = preprocess_image(image_bytes)
+            # print(img_array) # debug print
+            if img_array is None:
+                return jsonify({'error': f'Invalid image format for {id}'}), 400
 
-        # Run model
-        predictions = model.predict(img_array)
-        predicted_label = np.argmax(predictions, axis=1)[0]
+            # Run model
+            prediction = model.predict(img_array)
+            predicted_label = np.argmax(prediction, axis=1)[0]
 
-        # Convert to a symbol or number
-        predicted_symbol = convert_to_symbol(predicted_label)
+            # Convert to a symbol or number
+            predicted_symbol = convert_to_symbol(predicted_label)
 
         # Return both the numerical label and the symbol
-        return jsonify({
-            "predicted_label": int(predicted_label),
-            "predicted_symbol": predicted_symbol,
-            "confidence": float(predictions[0][predicted_label])
-        })
+            predictions[id] = {
+                'predicted_label': int(predicted_label),
+                'predicted_symbol': predicted_symbol,
+                'accuracy': float(prediction[0][predicted_label])
+            }
+        return jsonify(predictions)
 
-    except (ValueError, base64.binascii.Error):
-        return jsonify({"error": "Invalid base64 data"}), 400
+    except (ValueError, base64.binascii.Error) as e:
+        return jsonify({'error': f'There was an error processing one or more images: {e}'}), 400
 
 
 if __name__ == '__main__':
