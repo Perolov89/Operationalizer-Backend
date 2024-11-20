@@ -168,5 +168,3 @@ cython_debug/
 
 # Workflow notes
 notes.txt
-# the model
-number_and_symbol_recognizer.keras
