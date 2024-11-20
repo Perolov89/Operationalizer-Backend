@@ -5,6 +5,12 @@ import numpy as np
 from PIL import Image, UnidentifiedImageError, ImageOps
 import io
 import base64
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+serving_endpoint = os.getenv("ENDPOINT")
 
 model = tf.keras.models.load_model('number_and_symbol_recognizer.keras')
 
@@ -52,7 +58,7 @@ def convert_to_symbol(predicted_label):
     return symbol_map.get(predicted_class, predicted_class)
 
 
-@app.route('/predict', methods=['POST'])
+@app.route(serving_endpoint, methods=['POST'])
 def predict():
     # print("Received request")  # debug print
 
