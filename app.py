@@ -57,6 +57,9 @@ def convert_to_symbol(predicted_label):
     # Convert to symbol if it's an operator, otherwise return the number
     return symbol_map.get(predicted_class, predicted_class)
 
+@app.route('/')
+def home():
+    return "The operationalizer is running!"
 
 @app.route(serving_endpoint, methods=['POST'])
 def predict():
